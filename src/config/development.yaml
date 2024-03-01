@@ -1,0 +1,4 @@
+mongodb:
+  uri: "mongodb://dev-server:27017"
+server:
+  port: "8080"
