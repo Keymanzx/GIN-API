@@ -1,14 +1,26 @@
 package server
 
 import (
+	"api-gin/src/config"
+	"api-gin/src/db/mongo"
 	"api-gin/src/routes"
-	"api-gin/src/db"
 	"context"
+	"fmt"
 	"log"
 )
 
 func Init() {
-	port := "8080"
+
+	// Load configuration
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Println("Error loading configuration:", err)
+		return
+	}
+	port := cfg.AppPort
+	if port == "" {
+		port = "8080"
+	}
 
 	// Connect to MongoDB
 	client, err := db.ConnectToMongoDB()

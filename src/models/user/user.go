@@ -8,6 +8,7 @@ import (
 
 type CreateUserInput struct {
 	UserName string `json:"user_name" binding:"required"`
+	Password string `json:"password" binding:"required"`
 	Gender   string `json:"gender" binding:"required"`
 }
 
@@ -21,6 +22,7 @@ type UpdateUserInput struct {
 type Users struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
 	UserName  string             `bson:"user_name,omitempty"`
+	Password  string             `bson:"password,omitempty"`
 	Gender    string             `bson:"gender,omitempty"`
 	Active    bool               `bson:"active,omitempty"`
 	CreatedAt time.Time          `bson:"created_at,omitempty"`

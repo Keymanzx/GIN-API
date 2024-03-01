@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -8,17 +10,47 @@ import (
 	repoUser "api-gin/src/repository/user"
 	serviceUser "api-gin/src/services/user"
 
+	"api-gin/src/db/redis"
+
 	"github.com/gin-gonic/gin"
 )
 
 func GetAllUser(c *gin.Context) {
+
+	cacheVal := redis.GetValue("allUsers")
+	if cacheVal != "" {
+		// Assuming jsonString is the JSON string you want to convert
+		var dataUser []user.Users
+		err := json.Unmarshal([]byte(cacheVal), &dataUser)
+		if err != nil {
+			// Handle error
+			fmt.Println("Error unmarshaling JSON:", err)
+			return
+		}
+
+		log.Println("*****  Cache Value *****")
+
+		c.JSON(http.StatusOK, gin.H{"message": "Get All Users", "user": dataUser})
+		return
+	}
+
 	users, err := repoUser.GetAllUsers()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Get Users Error", "user": nil})
 		return
 	}
 
-	log.Println("users :", users)
+	// Set Value in Redis
+	usersJSON, err := json.Marshal(users)
+	if err != nil {
+		// Handle error
+		fmt.Println("Error converting users to JSON:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Get Users Error", "user": nil})
+		return
+	}
+	usersString := string(usersJSON)
+	redis.SetKey("allUsers", usersString)
+	log.Println("*****  Set Value *****")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Get All Users", "user": users})
 	return
@@ -40,6 +72,9 @@ func GetByUserID(c *gin.Context) {
 
 func CreateUser(c *gin.Context) {
 	var importUser user.CreateUserInput
+
+	// Clear Cache
+	redis.ClearCache("allUsers")
 
 	// Bind request body to CreateUserRequest struct and perform validation
 	if err := c.ShouldBindJSON(&importUser); err != nil {
@@ -65,12 +100,15 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Create One User", "user": bodyUser})
+	c.JSON(http.StatusCreated, gin.H{"message": "Create User Success", "user": nil})
 	return
 }
 
 func UpdateUser(c *gin.Context) {
 	var updateUser user.UpdateUserInput
+
+	// Clear Cache
+	redis.ClearCache("allUsers")
 
 	// Bind validation
 	if err := c.ShouldBindJSON(&updateUser); err != nil {
@@ -103,6 +141,9 @@ func UpdateUser(c *gin.Context) {
 
 func DeleteByUserID(c *gin.Context) {
 	UserID := c.Param("id")
+
+	// Clear Cache
+	redis.ClearCache("allUsers")
 
 	// Delete User In DB
 	err := repoUser.DeleteByID(UserID)

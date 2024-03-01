@@ -1,13 +1,14 @@
 package user
 
 import (
-	"api-gin/src/db"
+	db "api-gin/src/db/mongo"
 	"api-gin/src/models/user"
 	"context"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // GetAllUsers retrieves all users from the users collection
@@ -25,8 +26,11 @@ func GetAllUsers() ([]user.Users, error) {
 	// Access users collection
 	collection := client.Database("gin_db").Collection("users")
 
-	// Find all users
-	cursor, err := collection.Find(context.Background(), bson.M{})
+	// Define projection to exclude password field
+	projection := bson.M{"password": 0}
+
+	// Find all users with projection
+	cursor, err := collection.Find(context.Background(), bson.M{}, options.Find().SetProjection(projection))
 	if err != nil {
 		return nil, err
 	}
