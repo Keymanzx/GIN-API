@@ -21,6 +21,9 @@ func NewRouter() *gin.Engine {
 	// Users
 	user := v1.Group("user")
 	user.GET("/all", middleware.JWTMiddleware(), ctl.GetAllUser)
+
+	user.GET("/produce", ctl.Mqtest)
+
 	user.GET("/:id", middleware.JWTMiddleware(), ctl.GetByUserID)
 	user.POST("/create", middleware.JWTMiddleware(), ctl.CreateUser)
 	user.PUT("/update", middleware.JWTMiddleware(), ctl.UpdateUser)

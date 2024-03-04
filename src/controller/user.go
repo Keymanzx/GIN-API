@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"api-gin/src/models/user"
 	repoUser "api-gin/src/repository/user"
@@ -13,6 +14,7 @@ import (
 	"api-gin/src/db/redis"
 
 	"github.com/gin-gonic/gin"
+	"github.com/streadway/amqp"
 )
 
 func GetAllUser(c *gin.Context) {
@@ -56,18 +58,57 @@ func GetAllUser(c *gin.Context) {
 	return
 }
 
+func Mqtest(c *gin.Context) {
+	// Connect to RabbitMQ server
+	conn, _ := amqp.Dial("amqp://admin:12345@localhost:5672/")
+
+	defer conn.Close()
+
+	// Open a channel
+	ch, _ := conn.Channel()
+	defer ch.Close()
+
+	// Declare a queue
+	q, _ := ch.QueueDeclare(
+		"hello", // Queue name
+		false,   // Durable
+		false,   // Delete when unused
+		false,   // Exclusive
+		false,   // No-wait
+		nil,     // Arguments
+	)
+
+	// Publish a message to the queue
+	// body := "Hello, RabbitMQ! " + time.Now().Format(time.Stamp)
+	body := "send email " + time.Now().Format(time.Stamp)
+	err := ch.Publish(
+		"",     // Exchange
+		q.Name, // Routing key
+		false,  // Mandatory
+		false,  // Immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(body),
+		})
+	log.Printf(" [x] Sent %s", body)
+
+	log.Println(err)
+
+	c.JSON(200, gin.H{
+		"message": "Message sent to RabbitMQ",
+	})
+}
+
 func GetByUserID(c *gin.Context) {
 	UserID := c.Param("id")
 
 	user, err := repoUser.GetByID(UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Get User Error", "user": nil})
-		return
 	}
 
 	log.Println("users :", user)
 	c.JSON(http.StatusOK, gin.H{"message": "Get User Data", "user": user})
-	return
 }
 
 func CreateUser(c *gin.Context) {
